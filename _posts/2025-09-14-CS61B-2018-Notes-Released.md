@@ -1,7 +1,7 @@
 ---
 layout: post
-title: Gary Agasa's Personal Website Established
-subtitle: 羟基计化官网开张
+title: Gary Agasa's CS61B Notes Uploaded
+subtitle: CS61B笔记上传
 cover-img: /assets/img/press_conference.png
 thumbnail-img: /assets/img/joshhug.png
 share-img: /assets/img/joshhug.jpg
