@@ -13,6 +13,6 @@ My name is Gary Agasa(Shiqiang Wu).I'm currently an undergraduate at [Fudan Univ
 [![rdn_52ccbfa55bfdf.jpg](https://pic1.imgdb.cn/item/68c6b53cc5157e1a88013aec.jpg)](https://pic1.imgdb.cn/item/68c6b53cc5157e1a88013aec.jpg)
 
 ### Contact:
-garyagasa547@gmail.com
+garyagasa547@gmail.com \\
 
 Fudan University, Handan Campus
