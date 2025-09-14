@@ -24,8 +24,8 @@ navbar-links:
   Resources:
     - Beautiful Jekyll: "https://beautifuljekyll.com"
     - Learn markdown: "https://www.markdowntutorial.com/"
-    - timetable: "timetable"
-  Bilibili 赤石AI: "https://space.bilibili.com/456199522?spm_id_from=333.1007.0.0"
+    - CS61B Note: "CS61BWeek6Note.pdf"
+  B站 赤石AI: "https://space.bilibili.com/456199522?spm_id_from=333.1007.0.0"
 
 ################
 # --- Logo --- #
@@ -103,7 +103,7 @@ share-links-active:
 
 # How to display the link to your website in the footer
 # Remove this if you don't want a link in the footer
-url-pretty: "MyWebsite.com"
+url-pretty: "garyagasa.github.io"
 
 # Add the website title to the title of every page
 title-on-all-pages: true
