@@ -24,6 +24,7 @@ navbar-links:
   Resources:
     - Beautiful Jekyll: "https://beautifuljekyll.com"
     - Learn markdown: "https://www.markdowntutorial.com/"
+    - Week9: "CS61B_Note_Week9.pdf"
   CS61B Note:
     - Week6: _cs61b_notes/CS61B_Note_Week6.pdf
     - Week7: _cs61b_notes/CS61B_Note_Week7.pdf
