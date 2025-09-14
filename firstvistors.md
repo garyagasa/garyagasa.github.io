@@ -1,4 +1,4 @@
-#### First Vistors of `garyagasa.github.io`(SVIP)
+#### First Visitors of `garyagasa.github.io`(SVIP)
 
 - Shiqiang Wu
 - Zhiyuan Liao
