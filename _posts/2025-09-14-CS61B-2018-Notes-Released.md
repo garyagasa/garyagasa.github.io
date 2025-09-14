@@ -8,7 +8,7 @@ share-img: /assets/img/joshhug.jpg
 tags: [Notice, Signifcant]
 author: Gary Agasa
 ---
-本人自学UCB的CS61B数据结构课程的部分课程笔记已经上传，可以到`Resource/CS61B Note`下面找到。
+本人自学UCB的CS61B数据结构课程的部分课程笔记已经上传，可以到`CS61B Note`下面找到。
 CS61B是我的CS自学生涯的入门课。我很感激Josh Hug教授精彩绝伦的演讲和为这一门课所付出的辛勤努力。在这门课程里，你会用所学的知识，建造自己的方块游戏，创造自己的谷歌地图。你会创造自己的吉他演奏器，它可以弹奏你喜爱的歌曲。我记得自己当时弹奏了一首成都七中运动会的会歌《青春无悔》，激动地不得了，整个晚上差点都没有睡着。我第一次领略到计算机科学的美。我喜爱这门课，不同于国内答辩般的计算机本科教育，我感到了教师和助教的负责，我学得格外认真、格外安心。
 
 [CS61B 2018 Course Website](https://sp18.datastructur.es/)
