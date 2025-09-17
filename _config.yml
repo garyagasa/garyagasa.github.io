@@ -23,6 +23,7 @@ navbar-links:
   About Me: "aboutme"
   First Visitors: "firstvistors"
   Resources:
+    - PyTorch Tutorial: "torch.html"
     - CS188 2023: "https://inst.eecs.berkeley.edu/~cs188/fa23/"
     - CS61C 2020: "https://www.learncs.site/docs/curriculum-resource/cs61c/syllabus"
   CS61B Note:

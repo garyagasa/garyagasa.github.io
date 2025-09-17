@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式PyTorch入门讲义</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral -->
+    <!-- Application Structure Plan: The application uses a fixed sidebar navigation for thematic sections, allowing users to move between foundational concepts, data handling, and a "Model Zoo" with different ML/DL models. This non-linear, topic-based structure is better for learning than a long, linear document, as it lets beginners revisit core concepts or jump to specific models easily. The main content area dynamically displays the selected section. Key interactions include clicking navigation links to switch content and viewing an interactive Chart.js chart that visualizes a model's training loss, making the abstract concept of "learning" tangible. This design prioritizes modular learning and user-driven exploration over a rigid, sequential flow. -->
+    <!-- Visualization & Content Choices: 1. **Training Progress**: Report Info: Model training process. Goal: Show change over time. Viz: Line Chart. Interaction: Hover over points to see epoch/loss values. Justification: A line chart is the universally understood method for showing training performance. Library: Chart.js (Canvas). 2. **Dataset Batch**: Report Info: Loading image data. Goal: Inform/Organize. Viz: Grid of placeholder images. Interaction: None. Justification: A visual grid gives an immediate, intuitive sense of what a "batch" of data looks like, which is more effective than just code. Method: HTML/CSS (Tailwind Grid). 3. **Model Architectures**: Report Info: FCN, CNN, RNN structures. Goal: Organize/Inform. Viz: Formatted code blocks and simple text descriptions. Interaction: None. Justification: For model structures, the code itself is the most precise and useful representation for a beginner learning to implement it. Method: HTML `<pre><code>`. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FDFBF8;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D1C7BA;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #BCAE9F;
+        }
+        .code-block {
+            background-color: #F4F2EF;
+            border: 1px solid #EAE6E1;
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: #5C544B;
+        }
+        .prose h1, .prose h2, .prose h3 { color: #8C6A5D; }
+        .prose strong { color: #A58A7F; }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+        .nav-link.active {
+            background-color: #F4F2EF;
+            color: #8C6A5D;
+            border-left-color: #8C6A5D;
+        }
+        .nav-link:hover {
+            background-color: #F8F6F4;
+            color: #8C6A5D;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="flex min-h-screen">
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 flex-shrink-0 bg-[#FBF9F6] border-r border-gray-200/50 p-4 sticky top-0 h-screen overflow-y-auto">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6 px-2">PyTorch 入门</h1>
+            <ul class="space-y-1">
+                <li><a href="#welcome" class="nav-link active block font-medium text-gray-700 px-4 py-2 rounded-md">欢迎</a></li>
+                <li><a href="#setup" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">1. 环境准备</a></li>
+                <li><a href="#concepts" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">2. PyTorch 核心</a></li>
+                <li><a href="#data" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">3. 数据加载与处理</a></li>
+                <li><a href="#training" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">4. 训练与验证流程</a></li>
+                <li>
+                    <p class="font-bold text-gray-500 mt-4 mb-2 px-4 uppercase text-sm tracking-wider">模型库</p>
+                </li>
+                <li><a href="#knn-svm" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">5. kNN & SVM</a></li>
+                <li><a href="#fcn" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">6. 全连接网络 (FCN)</a></li>
+                <li><a href="#cnn" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">7. 卷积神经网络 (CNN)</a></li>
+                <li><a href="#rnn" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">8. 循环神经网络 (RNN)</a></li>
+                <li><a href="#transformer" class="nav-link block font-medium text-gray-700 px-4 py-2 rounded-md">9. Transformer</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 p-6 md:p-10 overflow-y-auto">
+            <div class="prose max-w-none">
+                <!-- Welcome Section -->
+                <section id="welcome" class="content-section">
+                    <h1>欢迎来到交互式 PyTorch 入门讲义</h1>
+                    <p>本讲义专为深度学习初学者设计，旨在通过清晰的解释和可执行的代码示例，帮助您快速掌握 PyTorch 的核心概念和使用方法。我们将从最基础的环境搭建开始，逐步深入到数据处理、模型构建，并探索从经典机器学习模型到前沿深度学习模型的实现，如全连接网络（FCN）、卷积神经网络（CNN）、循环神经网络（RNN）以及 Transformer。</p>
+                    <p>PyTorch 是一个强大而灵活的开源机器学习框架，以其易用性、动态计算图（Eager Execution）和丰富的社区支持而闻名。通过本讲义，您将学习到：</p>
+                    <ul>
+                        <li><strong>环境配置：</strong> 如何安装 PyTorch 及其相关依赖。</li>
+                        <li><strong>核心概念：</strong> 理解张量（Tensor）、自动求导（Autograd）等基本构建块。</li>
+                        <li><strong>数据处理：</strong> 如何使用 PyTorch 的工具加载和预处理不同来源的数据集。</li>
+                        <li><strong>模型构建：</strong> 学习使用 `torch.nn` 模块构建各种网络结构。</li>
+                        <li><strong>训练流程：</strong> 掌握一个标准的模型训练与验证循环。</li>
+                    </ul>
+                    <p>请点击左侧的导航栏，开始您的 PyTorch 学习之旅吧！</p>
+                </section>
+
+                <!-- Setup Section -->
+                <section id="setup" class="content-section" style="display: none;">
+                    <h2>1. 环境准备</h2>
+                    <p>在开始之前，您需要安装 Python 和 PyTorch。推荐使用 Conda 来管理您的环境，这样可以避免包版本冲突。</p>
+                    <h3>1.1 安装 Conda (Miniconda)</h3>
+                    <p>如果您尚未安装 Conda，可以从 <a href="https://docs.conda.io/en/latest/miniconda.html" target="_blank" class="text-[#8C6A5D] hover:underline">Miniconda 官网</a> 下载适合您操作系统的安装包并进行安装。</p>
+                    <h3>1.2 创建新的 Conda 环境</h3>
+                    <p>打开终端或 Anaconda Prompt，创建一个新的环境（例如，名为 `pytorch_env`），并指定 Python 版本。</p>
+                    <pre class="code-block"><code>conda create -n pytorch_env python=3.9</code></pre>
+                    <p>然后激活这个新环境：</p>
+                    <pre class="code-block"><code>conda activate pytorch_env</code></pre>
+                    <h3>1.3 安装 PyTorch</h3>
+                    <p>访问 <a href="https://pytorch.org/get-started/locally/" target="_blank" class="text-[#8C6A5D] hover:underline">PyTorch 官网</a>，根据您的系统配置（操作系统、包管理器、计算平台 CUDA 或 CPU）选择合适的安装命令。通常，对于 CPU 版本的安装命令如下：</p>
+                    <pre class="code-block"><code>conda install pytorch torchvision torchaudio cpuonly -c pytorch</code></pre>
+                    <h3>1.4 安装其他常用库</h3>
+                    <p>我们还需要一些其他库用于数据处理和可视化。</p>
+                    <pre class="code-block"><code>pip install numpy pandas matplotlib scikit-learn</code></pre>
+                    <p>安装完成后，您可以通过在 Python 解释器中运行以下代码来验证 PyTorch 是否安装成功：</p>
+                    <pre class="code-block"><code class="language-python">import torch
+print(torch.__version__)
+print(torch.cuda.is_available()) # 检查 CUDA 是否可用</code></pre>
+                </section>
+
+                <!-- Concepts Section -->
+                <section id="concepts" class="content-section" style="display: none;">
+                    <h2>2. PyTorch 核心概念</h2>
+                    <p>PyTorch 有几个核心组件，它们是构建所有模型的基础。</p>
+                    <h3>2.1 张量 (Tensor)</h3>
+                    <p>张量是 PyTorch 中的基本数据结构，类似于 NumPy 的 `ndarray`，但增加了在 GPU 上计算的能力。所有模型输入、输出和参数都是张量。</p>
+                    <pre class="code-block"><code class="language-python">import torch
+
+# 创建一个 2x3 的张量
+x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+print(f"Tensor x:\n {x}")
+
+# 创建一个随机张量
+y = torch.rand(3, 4)
+print(f"Random Tensor y:\n {y}")
+
+# 张量运算
+z = x.matmul(y) # 矩阵乘法
+print(f"Matrix multiplication result z:\n {z}")
+</code></pre>
+                    <h3>2.2 自动求导 (Autograd)</h3>
+                    <p>PyTorch 的 `autograd` 包提供了张量上所有操作的自动微分功能。这是神经网络训练的核心。当一个张量的 `requires_grad` 属性设置为 `True` 时，PyTorch 会追踪所有对它的操作，从而可以自动计算梯度。</p>
+                    <pre class="code-block"><code class="language-python"># 创建一个需要梯度的张量
+a = torch.tensor([2.0, 3.0], requires_grad=True)
+b = torch.tensor([6.0, 4.0], requires_grad=True)
+
+Q = 3*a**3 - b**2
+
+# 对 Q 进行反向传播
+# PyTorch 需要一个外部梯度来开始计算，对于标量，这通常是 torch.tensor(1.)
+Q.sum().backward()
+
+# 检查梯度
+# dQ/da = 9a^2
+print(a.grad) # 预期: [36., 81.]
+
+# dQ/db = -2b
+print(b.grad) # 预期: [-12., -8.]
+</code></pre>
+                    <h3>2.3 `nn.Module`</h3>
+                    <p>在 PyTorch 中，所有神经网络模型都应继承自 `torch.nn.Module`。这是一个基类，它帮助管理模型的参数、层和前向传播逻辑。</p>
+                    <pre class="code-block"><code class="language-python">import torch.nn as nn
+import torch.nn.functional as F
+
+class SimpleNet(nn.Module):
+    def __init__(self):
+        super(SimpleNet, self).__init__()
+        # 定义模型的层
+        self.fc1 = nn.Linear(784, 128) # 全连接层
+        self.fc2 = nn.Linear(128, 10)  # 输出层
+
+    def forward(self, x):
+        # 定义前向传播逻辑
+        x = x.view(-1, 784) # 将输入展平
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+# 实例化模型
+net = SimpleNet()
+print(net)
+</code></pre>
+                </section>
+
+                <!-- Data Section -->
+                <section id="data" class="content-section" style="display: none;">
+                    <h2>3. 数据加载与处理</h2>
+                    <p>高效的数据加载和预处理对于训练模型至关重要。PyTorch 提供了 `Dataset` 和 `DataLoader` 两个强大的工具来简化这个过程。</p>
+                    <h3>3.1 `torch.utils.data.Dataset`</h3>
+                    <p>`Dataset` 是一个抽象类，代表一个数据集。您可以自定义自己的 `Dataset` 类，只需实现 `__len__` (返回数据集大小) 和 `__getitem__` (根据索引返回一个样本) 两个方法。</p>
+                    <h3>3.2 `torch.utils.data.DataLoader`</h3>
+                    <p>`DataLoader` 是一个迭代器，它包装 `Dataset`，并提供了批量处理 (batching)、打乱数据 (shuffling) 和并行加载数据的功能。</p>
+                    
+                    <h3>示例 1: 使用 torchvision 内置数据集 (例如 MNIST)</h3>
+                    <p>`torchvision` 包含许多常用的计算机视觉数据集，如 MNIST, CIFAR-10 等。</p>
+                    <pre class="code-block"><code class="language-python">from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+# 定义数据预处理
+transform = transforms.Compose([
+    transforms.ToTensor(), # 将图片转换为 Tensor
+    transforms.Normalize((0.5,), (0.5,)) # 归一化
+])
+
+# 下载并加载训练集
+train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+
+# 加载测试集
+test_dataset = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+# 迭代一个批次的数据
+data_iter = iter(train_loader)
+images, labels = next(data_iter)
+
+print(f"Images batch shape: {images.shape}") # [batch_size, channels, height, width]
+print(f"Labels batch shape: {labels.shape}")
+</code></pre>
+                    <p class="mt-4">下面是一个数据批次的模拟可视化，展示了从数据集中加载的一批图像的样子：</p>
+                    <div class="grid grid-cols-8 gap-2 p-4 bg-gray-100 rounded-lg border max-w-lg mx-auto">
+                        <script>
+                            for(let i = 0; i < 64; i++) {
+                                document.write('<div class="w-full h-12 bg-gray-300 rounded flex items-center justify-center text-xs text-gray-500">'+ (i+1) +'</div>');
+                            }
+                        </script>
+                    </div>
+
+                    <h3 class="mt-8">示例 2: 从 Kaggle 下载的 CSV 文件加载数据</h3>
+                    <p>假设我们有一个 `data.csv` 文件，其中包含特征和标签。我们可以使用 `pandas` 读取数据，然后创建一个自定义的 `Dataset`。</p>
+                    <pre class="code-block"><code class="language-python">import torch
+import pandas as pd
+from torch.utils.data import Dataset, DataLoader
+
+# 假设 data.csv 的内容如下:
+# feature1,feature2,feature3,label
+# 0.1,0.2,0.3,0
+# 0.4,0.5,0.6,1
+# ...
+
+class CustomCSVDataset(Dataset):
+    def __init__(self, csv_file):
+        # 读取 csv 文件
+        self.data_frame = pd.read_csv(csv_file)
+        # 将特征和标签分开
+        self.features = self.data_frame.iloc[:, :-1].values
+        self.labels = self.data_frame.iloc[:, -1].values
+
+    def __len__(self):
+        return len(self.data_frame)
+
+    def __getitem__(self, idx):
+        # 获取特征和标签，并转换为 Tensor
+        features = torch.tensor(self.features[idx], dtype=torch.float32)
+        label = torch.tensor(self.labels[idx], dtype=torch.long)
+        return features, label
+
+# 实例化 Dataset
+# 假设我们已经创建了一个名为 'dummy_data.csv' 的文件
+# with open('dummy_data.csv', 'w') as f:
+#     f.write('f1,f2,f3,label\n')
+#     for i in range(100):
+#         f.write(f'{i*0.1},{i*0.2},{i*0.3},{i%2}\n')
+
+# csv_dataset = CustomCSVDataset('dummy_data.csv')
+# csv_loader = DataLoader(csv_dataset, batch_size=10, shuffle=True)
+
+# for features, labels in csv_loader:
+#     print(f"Features batch shape: {features.shape}")
+#     print(f"Labels batch shape: {labels.shape}")
+#     break
+</code></pre>
+                </section>
+
+                <!-- Training Section -->
+                <section id="training" class="content-section" style="display: none;">
+                    <h2>4. 训练与验证流程</h2>
+                    <p>一个标准的深度学习模型训练流程通常包含以下几个步骤：</p>
+                    <ol>
+                        <li><strong>定义模型、损失函数和优化器。</strong></li>
+                        <li><strong>迭代训练数据集：</strong>
+                            <ul>
+                                <li>将数据送入模型进行前向传播。</li>
+                                <li>计算损失。</li>
+                                <li>清空之前的梯度 (`optimizer.zero_grad()`)。</li>
+                                <li>进行反向传播，计算梯度 (`loss.backward()`)。</li>
+                                <li>更新模型权重 (`optimizer.step()`)。</li>
+                            </ul>
+                        </li>
+                        <li><strong>在验证集上评估模型性能。</strong></li>
+                        <li><strong>重复以上过程指定的轮数 (epochs)。</strong></li>
+                    </ol>
+
+                    <p>下面是一个通用的训练和验证函数模板，您可以根据具体任务进行修改。</p>
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+
+# --- 1. 准备工作 ---
+# 假设我们有模型、数据加载器、损失函数和优化器
+# model = YourModel()
+# train_loader = YourTrainDataLoader()
+# val_loader = YourValDataLoader()
+# criterion = nn.CrossEntropyLoss()
+# optimizer = optim.SGD(model.parameters(), lr=0.01)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# model.to(device)
+
+def train_one_epoch(model, train_loader, criterion, optimizer, device):
+    model.train() # 设置模型为训练模式
+    running_loss = 0.0
+    for inputs, labels in train_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+
+        # 梯度清零
+        optimizer.zero_grad()
+
+        # 前向传播
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        
+        # 反向传播和优化
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item() * inputs.size(0)
+    
+    epoch_loss = running_loss / len(train_loader.dataset)
+    return epoch_loss
+
+def validate(model, val_loader, criterion, device):
+    model.eval() # 设置模型为评估模式
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    with torch.no_grad(): # 在评估阶段不计算梯度
+        for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            
+            running_loss += loss.item() * inputs.size(0)
+            
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    epoch_loss = running_loss / len(val_loader.dataset)
+    accuracy = 100 * correct / total
+    return epoch_loss, accuracy
+
+# --- 2. 训练循环 ---
+# num_epochs = 10
+# for epoch in range(num_epochs):
+#     train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
+#     val_loss, val_accuracy = validate(model, val_loader, criterion, device)
+    
+#     print(f"Epoch {epoch+1}/{num_epochs}, "
+#           f"Train Loss: {train_loss:.4f}, "
+#           f"Val Loss: {val_loss:.4f}, "
+#           f"Val Accuracy: {val_accuracy:.2f}%")
+</code></pre>
+                </section>
+                
+                <!-- KNN and SVM Section -->
+                <section id="knn-svm" class="content-section" style="display: none;">
+                    <h2>5. k-Nearest Neighbors (kNN) & Support Vector Machine (SVM)</h2>
+                    <p>kNN 和 SVM 是经典的机器学习算法。虽然 PyTorch 的主要优势在于深度学习，但我们也可以使用其张量运算来实现这些算法。不过在实际应用中，对于这类任务，使用 <strong>scikit-learn</strong> 库通常更直接、更高效。</p>
+                    <p>这里的示例旨在展示如何用 PyTorch 的思维方式来思考这些算法，而不是作为生产环境的最佳实践。</p>
+                    
+                    <h3>k-Nearest Neighbors (kNN)</h3>
+                    <p>kNN 的核心思想是：一个样本的类别由其最近的 k 个邻居的类别决定。在 PyTorch 中，我们可以利用广播和张量操作来高效地计算所有测试点到所有训练点的距离。</p>
+                    <pre class="code-block"><code class="language-python">import torch
+
+def knn_predict(X_train, y_train, X_test, k=3):
+    """
+    使用 PyTorch 张量运算实现 kNN 预测
+    """
+    # 计算所有测试点到所有训练点的 L2 距离
+    # (a-b)^2 = a^2 - 2ab + b^2
+    X_train_sq = torch.sum(X_train**2, dim=1, keepdim=True)
+    X_test_sq = torch.sum(X_test**2, dim=1, keepdim=True)
+    dists = X_train_sq.T + X_test_sq - 2 * torch.matmul(X_test, X_train.T)
+    
+    # 找到每个测试点最近的 k 个邻居
+    _, top_k_indices = torch.topk(dists, k, dim=1, largest=False)
+    
+    # 获取这些邻居的标签
+    top_k_labels = y_train[top_k_indices]
+    
+    # 对每个测试点的 k 个邻居标签进行投票
+    # mode() 返回值和索引
+    y_pred, _ = torch.mode(top_k_labels, dim=1)
+    
+    return y_pred
+
+# --- 示例数据 ---
+X_train = torch.tensor([[1, 2], [1.5, 1.8], [5, 8], [8, 8], [1, 0.6], [9, 11]], dtype=torch.float32)
+y_train = torch.tensor([0, 0, 1, 1, 0, 1], dtype=torch.long)
+X_test = torch.tensor([[0, 0], [5, 5]], dtype=torch.float32)
+
+predictions = knn_predict(X_train, y_train, X_test, k=3)
+print(f"kNN Predictions: {predictions}") # 预期: [0, 1]
+</code></pre>
+
+                    <h3>Support Vector Machine (SVM)</h3>
+                    <p>SVM 的目标是找到一个超平面，以最大化不同类别样本之间的间隔。线性 SVM 的损失函数通常是 Hinge Loss。我们可以用 PyTorch 的自动求导和优化器来训练一个线性 SVM。</p>
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# SVM 可以看作一个没有隐藏层和激活函数的线性模型
+class LinearSVM(nn.Module):
+    def __init__(self, n_features):
+        super().__init__()
+        self.linear = nn.Linear(n_features, 1)
+
+    def forward(self, x):
+        return self.linear(x)
+
+def hinge_loss(outputs, labels):
+    # PyTorch 中没有内置 Hinge Loss，我们可以自己实现
+    # 注意：标签需要是 -1 和 1
+    return torch.mean(torch.clamp(1 - outputs.T * labels, min=0))
+
+# --- 示例数据 ---
+X_train = torch.tensor([[1, 2], [2, 3], [3, 3], [-1, -2], [-2, -3], [-3, -3]], dtype=torch.float32)
+# Hinge loss 需要标签为 -1 或 1
+y_train = torch.tensor([1, 1, 1, -1, -1, -1], dtype=torch.float32) 
+
+n_samples, n_features = X_train.shape
+model = LinearSVM(n_features)
+optimizer = optim.SGD(model.parameters(), lr=0.01)
+
+# --- 训练循环 ---
+# for epoch in range(100):
+#     outputs = model(X_train).squeeze()
+#     loss = hinge_loss(outputs, y_train)
+    
+#     optimizer.zero_grad()
+#     loss.backward()
+#     optimizer.step()
+    
+#     if (epoch + 1) % 10 == 0:
+#         print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
+</code></pre>
+                </section>
+
+                <!-- FCN Section -->
+                <section id="fcn" class="content-section" style="display: none;">
+                    <h2>6. 全连接网络 (Fully-Connected Network, FCN)</h2>
+                    <p>全连接网络，也称为多层感知机 (MLP)，是最基础的深度学习模型。它的每一层神经元都与前一层的所有神经元相连。FCN 非常适合处理表格数据或作为更复杂模型的组成部分。</p>
+                    
+                    <h3>模型结构</h3>
+                    <p>一个典型的 FCN 由多个线性层 (`nn.Linear`) 和非线性激活函数 (`F.relu`, `F.sigmoid` 等) 堆叠而成。下面是一个用于对 MNIST 手写数字进行分类的 FCN 示例。</p>
+                    
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+# --- 1. 定义模型 ---
+class FCN(nn.Module):
+    def __init__(self):
+        super(FCN, self).__init__()
+        self.fc1 = nn.Linear(28 * 28, 512) # 输入层 (784) -> 隐藏层1 (512)
+        self.fc2 = nn.Linear(512, 256)     # 隐藏层1 (512) -> 隐藏层2 (256)
+        self.fc3 = nn.Linear(256, 10)      # 隐藏层2 (256) -> 输出层 (10)
+
+    def forward(self, x):
+        # 将输入的 28x28 图像展平为 784 维向量
+        x = x.view(-1, 28 * 28)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x) # 输出层通常不加激活函数，因为 CrossEntropyLoss 会处理
+        return x
+
+# --- 2. 准备数据和超参数 ---
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = FCN().to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,)) # MNIST 数据集的均值和标准差
+])
+
+train_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+
+test_dataset = datasets.MNIST(root='./data', train=False, transform=transform)
+test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False)
+
+# --- 3. 训练模型 (此处省略训练循环，可复用第4节的模板) ---
+# for epoch in range(num_epochs):
+#     ... 训练和验证 ...
+print("FCN 模型已定义。可以使用第4节的训练模板进行训练。")
+</code></pre>
+                    
+                </section>
+
+                <!-- CNN Section -->
+                <section id="cnn" class="content-section" style="display: none;">
+                    <h2>7. 卷积神经网络 (Convolutional Neural Network, CNN)</h2>
+                    <p>CNN 是计算机视觉领域的核心模型。它通过卷积层 (`nn.Conv2d`) 来提取图像的局部特征，并通过池化层 (`nn.MaxPool2d`) 来降低特征图的维度，从而实现对图像内容的有效识别。</p>
+                    
+                    <h3>模型结构</h3>
+                    <p>一个简单的 CNN 通常由交替的卷积层和池化层，以及最后的几个全连接层组成。</p>
+                    <pre class="code-block"><code class="language-python">import torch.nn as nn
+import torch.nn.functional as F
+
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        # 输入: 1x28x28 (channel, height, width)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5, stride=1, padding=2)
+        # -> 16x28x28
+        self.pool1 = nn.MaxPool2d(kernel_size=2)
+        # -> 16x14x14
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=1, padding=2)
+        # -> 32x14x14
+        self.pool2 = nn.MaxPool2d(kernel_size=2)
+        # -> 32x7x7
+        
+        # 将 32x7x7 的特征图展平后送入全连接层
+        self.fc1 = nn.Linear(32 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10) # 10个类别
+
+    def forward(self, x):
+        x = self.pool1(F.relu(self.conv1(x)))
+        x = self.pool2(F.relu(self.conv2(x)))
+        
+        # 展平操作
+        x = x.view(-1, 32 * 7 * 7)
+        
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+# 实例化模型
+cnn_model = SimpleCNN()
+print(cnn_model)
+print("\nCNN 模型已定义。同样可以使用第4节的训练模板在 MNIST 数据集上进行训练。")
+</code></pre>
+
+                    <h3 class="mt-8">训练过程可视化</h3>
+                    <p>为了让训练过程更直观，下面使用 Chart.js 绘制了一个模拟的训练和验证损失曲线图。在实际训练中，您会看到损失值随着训练轮数的增加而逐渐下降，这表明模型正在学习。</p>
+                    <div class="chart-container">
+                        <canvas id="trainingLossChart"></canvas>
+                    </div>
+
+                </section>
+
+                <!-- RNN Section -->
+                <section id="rnn" class="content-section" style="display: none;">
+                    <h2>8. 循环神经网络 (Recurrent Neural Network, RNN)</h2>
+                    <p>RNN 专为处理序列数据而设计，如文本、时间序列等。它的核心特点是神经元可以在不同时间步之间传递信息，从而捕捉序列中的时间依赖关系。常见的 RNN 变体包括 LSTM (长短期记忆网络) 和 GRU (门控循环单元)，它们能更好地处理长序列依赖问题。</p>
+                    
+                    <h3>模型结构</h3>
+                    <p>下面是一个使用 `nn.LSTM` 对文本进行情感分类的简单示例。模型会读取一个单词序列，并输出一个分类结果（例如，正面或负面）。</p>
+                    
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+
+class SimpleRNN(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim, n_layers, dropout):
+        super().__init__()
+        
+        # 词嵌入层：将单词索引映射为密集向量
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        
+        # LSTM 层
+        self.rnn = nn.LSTM(embedding_dim, 
+                           hidden_dim, 
+                           num_layers=n_layers, 
+                           bidirectional=True, # 使用双向LSTM
+                           dropout=dropout,
+                           batch_first=True) # 输入和输出张量的第一维是 batch_size
+        
+        # 全连接层
+        self.fc = nn.Linear(hidden_dim * 2, output_dim) # *2 因为是双向
+        
+        self.dropout = nn.Dropout(dropout)
+        
+    def forward(self, text, text_lengths):
+        # text shape: [batch size, sent len]
+        
+        embedded = self.dropout(self.embedding(text))
+        # embedded shape: [batch size, sent len, emb dim]
+        
+        # 打包序列，让 RNN 忽略 padding 的部分
+        packed_embedded = nn.utils.rnn.pack_padded_sequence(embedded, text_lengths.to('cpu'), batch_first=True, enforce_sorted=False)
+        
+        packed_output, (hidden, cell) = self.rnn(packed_embedded)
+        
+        # hidden shape: [num_layers * num_directions, batch_size, hid_dim]
+        # 我们需要最后时刻的隐藏状态
+        # 连接前向和后向的最后隐藏层状态
+        hidden = self.dropout(torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim = 1))
+        # hidden shape: [batch_size, hid_dim * 2]
+            
+        return self.fc(hidden)
+
+# --- 实例化模型 ---
+VOCAB_SIZE = 10000
+EMBEDDING_DIM = 100
+HIDDEN_DIM = 256
+OUTPUT_DIM = 2 # 例如，正面/负面
+N_LAYERS = 2
+DROPOUT = 0.5
+
+rnn_model = SimpleRNN(VOCAB_SIZE, EMBEDDING_DIM, HIDDEN_DIM, OUTPUT_DIM, N_LAYERS, DROPOUT)
+print(rnn_model)
+</code></pre>
+                    <p><strong>注意：</strong> 训练 RNN/LSTM 通常需要对文本进行预处理，例如分词、构建词汇表、将文本转换为索引序列以及处理变长序列（通过 padding）。这是一个比图像分类更复杂的流程。</p>
+                </section>
+                
+                <!-- Transformer Section -->
+                <section id="transformer" class="content-section" style="display: none;">
+                    <h2>9. Transformer</h2>
+                    <p>Transformer 是一个革命性的模型，最初用于机器翻译，现在已成为自然语言处理 (NLP) 领域的基石（如 BERT, GPT）。它完全抛弃了 RNN 的循环结构，仅使用自注意力机制 (Self-Attention) 来捕捉序列中的依赖关系，这使得模型可以并行处理整个序列，大大提高了训练效率。</p>
+                    
+                    <h3>模型结构</h3>
+                    <p>Transformer 的核心是编码器 (Encoder) 和解码器 (Decoder) 结构，每个都由多个相同的层堆叠而成。每一层都包含一个多头自注意力 (Multi-Head Self-Attention) 模块和一个前馈神经网络 (Feed-Forward Network)。</p>
+                    <p>PyTorch 在 `nn` 模块中提供了 Transformer 的标准实现 (`nn.Transformer`)，我们可以直接使用它或其组件来构建自己的模型。</p>
+                    
+                    <pre class="code-block"><code class="language-python">import torch
+import torch.nn as nn
+import math
+
+class PositionalEncoding(nn.Module):
+    """为输入序列添加位置信息"""
+    def __init__(self, d_model, max_len=5000):
+        super().__init__()
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(max_len, 1, d_model)
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        # x shape: [seq_len, batch_size, embedding_dim]
+        x = x + self.pe[:x.size(0)]
+        return x
+
+class SimpleTransformerClassifier(nn.Module):
+    def __init__(self, vocab_size, d_model, nhead, num_encoder_layers, dim_feedforward, num_classes):
+        super().__init__()
+        self.d_model = d_model
+        self.embedding = nn.Embedding(vocab_size, d_model)
+        self.pos_encoder = PositionalEncoding(d_model)
+        
+        # 定义 Transformer 编码器层
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward, batch_first=True)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoder_layers)
+        
+        self.classifier = nn.Linear(d_model, num_classes)
+
+    def forward(self, src, src_mask=None):
+        # src shape: [batch_size, seq_len]
+        src = self.embedding(src) * math.sqrt(self.d_model)
+        src = self.pos_encoder(src.transpose(0, 1)).transpose(0, 1) # PositionalEncoding needs [seq_len, batch_size, dim]
+        
+        output = self.transformer_encoder(src, src_mask)
+        # output shape: [batch_size, seq_len, d_model]
+        
+        # 使用第一个 token [CLS] 的输出来进行分类
+        output = output[:, 0, :]
+        
+        return self.classifier(output)
+
+# --- 实例化模型 ---
+VOCAB_SIZE = 10000
+D_MODEL = 512       # 嵌入维度
+NHEAD = 8           # 多头注意力的头数
+NUM_ENCODER_LAYERS = 6
+DIM_FEEDFORWARD = 2048
+NUM_CLASSES = 2
+
+transformer_model = SimpleTransformerClassifier(VOCAB_SIZE, D_MODEL, NHEAD, NUM_ENCODER_LAYERS, DIM_FEEDFORWARD, NUM_CLASSES)
+print(transformer_model)
+</code></pre>
+                    <p><strong>注意：</strong> 使用 Transformer 模型时，需要特别注意输入数据的形状（PyTorch 默认 `nn.Transformer` 的输入是 `[seq_len, batch_size, dim]`，但可以通过 `batch_first=True` 修改）以及掩码 (mask) 的使用，例如用于忽略 padding 部分的 `src_key_padding_mask`。</p>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function updateContent(hash) {
+                if (!hash) {
+                    hash = '#welcome';
+                }
+
+                let sectionFound = false;
+                contentSections.forEach(section => {
+                    if ('#' + section.id === hash) {
+                        section.style.display = 'block';
+                        sectionFound = true;
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+                if(!sectionFound){
+                    document.getElementById('welcome').style.display = 'block';
+                }
+
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === hash) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    history.pushState(null, null, targetId);
+                    updateContent(targetId);
+                    document.getElementById('main-content').scrollTop = 0;
+                });
+            });
+
+            window.addEventListener('popstate', function() {
+                updateContent(window.location.hash);
+            });
+
+            // Initial load
+            updateContent(window.location.hash);
+
+            // Chart.js for CNN training visualization
+            const ctx = document.getElementById('trainingLossChart').getContext('2d');
+            const epochs = Array.from({length: 10}, (_, i) => `Epoch ${i + 1}`);
+            const trainLoss = [2.1, 1.5, 0.9, 0.6, 0.45, 0.3, 0.22, 0.18, 0.15, 0.12];
+            const valLoss = [1.8, 1.2, 0.8, 0.5, 0.35, 0.25, 0.2, 0.16, 0.14, 0.13];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: '训练损失 (Training Loss)',
+                        data: trainLoss,
+                        borderColor: '#A58A7F',
+                        backgroundColor: 'rgba(165, 138, 127, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }, {
+                        label: '验证损失 (Validation Loss)',
+                        data: valLoss,
+                        borderColor: '#D1C7BA',
+                        backgroundColor: 'rgba(209, 199, 186, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '损失值 (Loss Value)'
+                            }
+                        },
+                        x: {
+                             title: {
+                                display: true,
+                                text: '训练轮数 (Epochs)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                             mode: 'index',
+                             intersect: false,
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
