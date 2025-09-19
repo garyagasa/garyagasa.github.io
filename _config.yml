@@ -148,20 +148,20 @@ navbar-var-length: false
 page-col: "#120b06"
 text-col: "#f5f3f2"
 link-col: "#0aa0ad"
-hover-col: "#0a33ad"
+hover-col: "#79807b"
 navbar-col: "#b36a17"
 navbar-text-col: "#e8e5e1"
 navbar-border-col: "#d97809"
 footer-col: "#b36a17"
 footer-text-col: "#e8e5e1"
-footer-link-col: "#a18515"
-footer-hover-col: "#614f09"
+footer-link-col: "#dfe8e1"
+footer-hover-col: "#79807b"
 
 # Alternatively, the navbar, footer, and page background can be set to an image
 # instead of colour
 
 #navbar-img: "/assets/img/bgimage.png"
-#footer-img: "/assets/img/bgimage.png"
+footer-img: "/assets/img/sunset.jpg"
 #page-img: "/assets/img/bgimage.png"
 
 # Suggest a colour for mobile browsers to use as the browser's theme. This is only supported by a few mobile browsers.
